@@ -1,0 +1,9 @@
+{
+  "name": "facetrack-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "install:all": "npm install --prefix frontend && pip install -r backend/requirements.txt",
+    "start:backend": "cd backend && python app.py"
+  }
+}

@@ -1,0 +1,13 @@
+flask>=2.0
+flask-cors>=4.0
+gunicorn
+opencv-python-headless
+numpy
+scipy
+mtcnn
+keras-facenet
+firebase-admin
+tensorflow-cpu
+pymongo[srv]
+werkzeug
+
