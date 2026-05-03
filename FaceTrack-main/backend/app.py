@@ -23,31 +23,52 @@ from bson.binary import Binary
 from dotenv import load_dotenv
 load_dotenv()
 
-# ✅ FIX (missing tha)
 import sqlite3
 
 app = Flask(__name__)
 CORS(app)
+AUTH_DB = "auth.db"
 
-# ================== 🔥 MONGODB CONFIG (UPDATED) ==================
-MONGO_URI = os.getenv("MONGO_URI")
-
-client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
-
-# ✅ CONNECTION CONFIRM
+# Initialize Firebase Admin if credentials are available.
 try:
-    client.admin.command('ping')
+    firebase_admin.get_app()
+except ValueError:
+    firebase_cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if firebase_cred_path and os.path.exists(firebase_cred_path):
+        cred = credentials.Certificate(firebase_cred_path)
+        firebase_admin.initialize_app(cred)
+    else:
+        try:
+            firebase_admin.initialize_app()
+        except Exception:
+            print("Firebase Admin initialization skipped; set GOOGLE_APPLICATION_CREDENTIALS if using Firebase auth.")
+
+# ================== 🔥 MONGODB CONFIG (FINAL FIXED) ==================
+MONGO_URI = "Harsh Mongo URI"
+
+try:
+    client = MongoClient(
+        MONGO_URI,
+        serverSelectionTimeoutMS=5000  # 5 sec timeout
+    )
+
+    # Force connection check
+    client.server_info()
+
     print("✅ MongoDB Connected Successfully")
+
 except Exception as e:
-    print("❌ MongoDB Connection Failed:", e)
+    print("❌ MongoDB Connection Failed")
+    print("Error:", e)
+    exit()   # stop app if DB not connected
 
-db = client['facetrack_db']
+db = client["facetrack_db"]
 
-users_col = db['users']
-sessions_col = db['sessions']
-students_col = db['students']
-attendance_col = db['attendance']
-face_config_col = db['face_config']
+users_col = db["users"]
+sessions_col = db["sessions"]
+students_col = db["students"]
+attendance_col = db["attendance"]
+face_config_col = db["face_config"]
 # ================================================================
 
 def init_mongo_indexes():
@@ -60,6 +81,25 @@ def init_mongo_indexes():
         print(f"Index creation warning: {e}")
 
 init_mongo_indexes()
+
+
+def ensure_attendance_schema():
+    conn = sqlite3.connect("attendance.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS attendance (
+            name TEXT NOT NULL,
+            date TEXT NOT NULL,
+            time TEXT NOT NULL,
+            status TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+ensure_attendance_schema()
 
 SESSION_DAYS = 7
 _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
